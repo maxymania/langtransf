@@ -29,6 +29,8 @@ func (a *AST)Restore(b AST){
 }
 func (a *AST)String() string{
 	if a==nil { return "nil" }
-	if len(a.Childs)==0 { return fmt.Sprint("\"",a.Content,"\"") }
+	if len(a.Content)!=0 { return fmt.Sprint("\"",a.Content,"\"") }
 	return fmt.Sprint("~`",a.Head,"`",a.Childs)
 }
+
+
