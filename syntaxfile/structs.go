@@ -51,6 +51,9 @@ type Rule interface{
 }
 
 type SyntaxFile map[string]Rule
+func (sf SyntaxFile) ScanForKeyWords(km map[string]string) {
+	for _,r := range sf { r.ScanForKeyWords(km) }
+}
 func (sf SyntaxFile) String() string {
 	b := &bytes.Buffer{}
 	for k,v := range sf {
