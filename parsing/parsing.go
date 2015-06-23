@@ -15,6 +15,14 @@ type Token struct{
 	nxt  *Token
 }
 
+func Retempty() *Token{
+	var f Generator
+	var t *Token
+	f = Generator(func() *Token { return t })
+	t = MakeToken("EOF","","",nil,f)
+	return t
+}
+
 func noop() { }
 
 func initialize(gen Generator, t *Token) func() {

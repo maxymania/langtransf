@@ -36,10 +36,13 @@ func (s* sfparser) rule0(m *Modifier) {
 			ident := s.s.TokenText()
 			s.next()
 			if u.IsUpper(firstLetter(ident)) {
-				m.Data = append(m.Data,&CallRule{ident})
-			}else{
 				m.Data = append(m.Data,&MatchToken{ident})
+			}else{
+				m.Data = append(m.Data,&CallRule{ident})
 			}
+		case scanner.String:
+			m.Data = append(m.Data,&MatchText{s.unquote()})
+			s.next()
 		case '+','*','?':
 			modp := len(m.Data)-1
 			if modp>=0 {

@@ -30,7 +30,7 @@ func (s *StdScanner) FirstToken() *Token {
 	var f Generator
 	f = Generator(func() *Token {
 		r := s.s.Scan()
-		if r == scanner.EOF { return nil }
+		if r == scanner.EOF { return Retempty() }
 		t := s.s.TokenText()
 		d := ""
 		y := ""
