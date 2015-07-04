@@ -72,13 +72,13 @@ type Modifier struct{
 	Flags byte
 }
 func (m Modifier) String() string {
-	if m.Mode==0 {
+	if m.Mode==M_OR {
 		return fmt.Sprintf("%v",generateSRule_or(m.Data))
 	}
-	if m.Mode==1 {
+	if m.Mode==M_SEQ {
 		return fmt.Sprintf("%v",generateSRule(m.Data))
 	}
-	if m.Mode==2 {
+	if m.Mode==M_DROP {
 		return fmt.Sprintf("%v %v",generateSRule(m.Data),m_syms[m.Mode])
 	}
 	if m.Mode<' ' {
@@ -167,7 +167,16 @@ func (m MatchText) ScanForKeyWords(km map[string]string) {
 	km[m.Text]=m.Text
 }
 func (m MatchText) Parse(sf SyntaxFile,t *parsing.Token, d *ast.AST,e *ErrorRecorder) *parsing.Token {
-	if t.Distinct()!=m.Text { return nil }
+	if t.Distinct()!=m.Text {
+		if t.Distinct()!="" {
+			e.AddErr(t.Position(),
+				fmt.Sprintf("expected \"%s\", got \"%s\"",m.Text,t.Distinct()))
+		}else{
+			e.AddErr(t.Position(),
+				fmt.Sprintf("expected \"%s\", got %s",m.Text,t.Type()))
+		}
+		return nil
+	}
 	d.Add(d.NewAst("",t.Text(),t))
 	return t.Next()
 }
@@ -180,7 +189,16 @@ func (m MatchToken) String() string {
 }
 func (m MatchToken) ScanForKeyWords(km map[string]string) {}
 func (m MatchToken) Parse(sf SyntaxFile,t *parsing.Token, d *ast.AST,e *ErrorRecorder) *parsing.Token {
-	if t.Type()!=m.Token { return nil }
+	if t.Type()!=m.Token {
+		if t.Distinct()!="" {
+			e.AddErr(t.Position(),
+				fmt.Sprintf("expected %s, got \"%s\"",m.Token,t.Distinct()))
+		}else{
+			e.AddErr(t.Position(),
+				fmt.Sprintf("expected %s, got %s",m.Token,t.Type()))
+		}
+		return nil
+	}
 	d.Add(d.NewAst("",t.Text(),t))
 	return t.Next()
 }
