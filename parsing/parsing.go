@@ -38,6 +38,7 @@ func MakeToken(
 	t.t   = typ
 	t.d   = distinct
 	t.txt = text
+	t.pos = pos
 	if nxt==nil {
 		t.initf = noop
 	} else {
