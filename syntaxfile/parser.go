@@ -87,7 +87,7 @@ func (s* sfparser) rule0(m *Modifier) {
 					}
 					m.Data[atyp].(*Modifier).Flags |= F_MUTE
 				case "p","precise":
-					m.Data[atyp] = &Modifier{[]Rule{m.Data[atyp]},M_SEQ,0}
+					m.Data[atyp] = &Modifier{[]Rule{m.Data[atyp]},M_OMIT_VERBOSITY,0}
 				}
 			}
 		default: return
