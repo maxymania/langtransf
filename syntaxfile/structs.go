@@ -9,6 +9,7 @@ const (
 	M_OR byte = iota
 	M_SEQ
 	M_DROP
+	M_OMIT_VERBOSITY
 )
 const (
 	F_VERBOSE byte = 1<<iota
@@ -81,6 +82,9 @@ func (m Modifier) String() string {
 	if m.Mode==M_DROP {
 		return fmt.Sprintf("%v %v",generateSRule(m.Data),m_syms[m.Mode])
 	}
+	if m.Mode==M_OMIT_VERBOSITY	{
+		return fmt.Sprintf("%v #p",m.Data[0])
+	}
 	if m.Mode<' ' {
 		return fmt.Sprintf("%v",generateSRule(m.Data))
 	}
@@ -92,6 +96,13 @@ func (m Modifier) ScanForKeyWords(km map[string]string) {
 func (m Modifier) Parse(sf SyntaxFile,t *parsing.Token, d *ast.AST,e *ErrorRecorder) *parsing.Token {
 	if (m.Flags&F_MUTE)!=0 { e=nil }
 	switch (m.Mode){
+	case M_OMIT_VERBOSITY:
+		{
+			ebak := e.Backup()
+			t = m.Data[0].Parse(sf,t,d,e)
+			if t!=nil { e.Restore(ebak) }
+			return t
+		}
 	case M_DROP:
 		d = nil
 		fallthrough
