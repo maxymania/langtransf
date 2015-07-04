@@ -10,6 +10,10 @@ const (
 	M_SEQ
 	M_DROP
 )
+const (
+	F_VERBOSE byte = 1<<iota
+	F_MUTE
+)
 
 var m_syms = []string{
 	"or",
@@ -47,7 +51,7 @@ func generateSRule_or(r []Rule) string {
 
 type Rule interface{
 	ScanForKeyWords(km map[string]string)
-	Parse(sf SyntaxFile,t *parsing.Token, d *ast.AST) *parsing.Token 
+	Parse(sf SyntaxFile,t *parsing.Token,d *ast.AST,e *ErrorRecorder) *parsing.Token 
 }
 
 type SyntaxFile map[string]Rule
@@ -65,6 +69,7 @@ func (sf SyntaxFile) String() string {
 type Modifier struct{
 	Data []Rule
 	Mode byte
+	Flags byte
 }
 func (m Modifier) String() string {
 	if m.Mode==0 {
@@ -84,42 +89,50 @@ func (m Modifier) String() string {
 func (m Modifier) ScanForKeyWords(km map[string]string) {
 	for _,r := range m.Data { r.ScanForKeyWords(km) }
 }
-func (m Modifier) Parse(sf SyntaxFile,t *parsing.Token, d *ast.AST) *parsing.Token {
+func (m Modifier) Parse(sf SyntaxFile,t *parsing.Token, d *ast.AST,e *ErrorRecorder) *parsing.Token {
+	if (m.Flags&F_MUTE)!=0 { e=nil }
 	switch (m.Mode){
 	case M_DROP:
 		d = nil
 		fallthrough
 	case M_SEQ:
 		for _,r := range m.Data {
-			t = r.Parse(sf,t,d)
+			t = r.Parse(sf,t,d,e)
 			if t==nil { return nil }
 		}
 		return t
 	case M_OR:
+		ebak := e.Backup()
 		for _,r := range m.Data {
+			if (m.Flags&F_VERBOSE)==0 { e.Restore(ebak) }
 			bak := d.Backup()
-			ret := r.Parse(sf,t,d)
+			ebak = e.Backup()
+			ret := r.Parse(sf,t,d,e)
 			if ret!=nil { return ret }
 			d.Restore(bak)
 		}
 	case '?':
 		{
 			bak := d.Backup()
-			ret := m.Data[0].Parse(sf,t,d)
+			ebak := e.Backup()
+			ret := m.Data[0].Parse(sf,t,d,e)
 			if ret!=nil { return ret }
 			d.Restore(bak)
+			if (m.Flags&F_VERBOSE)==0 { e.Restore(ebak) }
 			return t
 		}
 	case '+':
-		t = m.Data[0].Parse(sf,t,d)
+		t = m.Data[0].Parse(sf,t,d,e)
 		if t==nil { return nil }
 		fallthrough
 	case '*':
 		for {
 			bak := d.Backup()
-			ret := m.Data[0].Parse(sf,t,d)
+			ebak := e.Backup()
+			ret := m.Data[0].Parse(sf,t,d,e)
 			if ret!=nil { t = ret; continue }
 			d.Restore(bak)
+			if (m.Flags&F_VERBOSE)==0 { e.Restore(ebak) }
 			return t
 		}
 	}
@@ -136,9 +149,9 @@ func (g Group) String() string {
 func (g Group) ScanForKeyWords(km map[string]string) {
 	g.Data.ScanForKeyWords(km)
 }
-func (g Group) Parse(sf SyntaxFile,t *parsing.Token, d *ast.AST) *parsing.Token {
+func (g Group) Parse(sf SyntaxFile,t *parsing.Token, d *ast.AST,e *ErrorRecorder) *parsing.Token {
 	d2 := d.NewAst(g.Name,"",nil)
-	r := g.Data.Parse(sf,t,d2)
+	r := g.Data.Parse(sf,t,d2,e)
 	if r==nil { return nil }
 	d.Add(d2)
 	return r
@@ -153,7 +166,7 @@ func (m MatchText) String() string {
 func (m MatchText) ScanForKeyWords(km map[string]string) {
 	km[m.Text]=m.Text
 }
-func (m MatchText) Parse(sf SyntaxFile,t *parsing.Token, d *ast.AST) *parsing.Token {
+func (m MatchText) Parse(sf SyntaxFile,t *parsing.Token, d *ast.AST,e *ErrorRecorder) *parsing.Token {
 	if t.Distinct()!=m.Text { return nil }
 	d.Add(d.NewAst("",t.Text(),t))
 	return t.Next()
@@ -166,7 +179,7 @@ func (m MatchToken) String() string {
 	return m.Token
 }
 func (m MatchToken) ScanForKeyWords(km map[string]string) {}
-func (m MatchToken) Parse(sf SyntaxFile,t *parsing.Token, d *ast.AST) *parsing.Token {
+func (m MatchToken) Parse(sf SyntaxFile,t *parsing.Token, d *ast.AST,e *ErrorRecorder) *parsing.Token {
 	if t.Type()!=m.Token { return nil }
 	d.Add(d.NewAst("",t.Text(),t))
 	return t.Next()
@@ -179,9 +192,9 @@ func (c CallRule) String() string {
 	return c.Name
 }
 func (c CallRule) ScanForKeyWords(km map[string]string) {}
-func (c CallRule) Parse(sf SyntaxFile,t *parsing.Token, d *ast.AST) *parsing.Token {
+func (c CallRule) Parse(sf SyntaxFile,t *parsing.Token, d *ast.AST,e *ErrorRecorder) *parsing.Token {
 	r,ok := sf[c.Name]
 	if !ok { panic("error: rune not found: "+c.Name) }
-	return r.Parse(sf,t,d)
+	return r.Parse(sf,t,d,e)
 }
 

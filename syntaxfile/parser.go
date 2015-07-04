@@ -46,7 +46,7 @@ func (s* sfparser) rule0(m *Modifier) {
 		case '+','*','?':
 			modp := len(m.Data)-1
 			if modp>=0 {
-				m.Data[modp] = &Modifier{[]Rule{m.Data[modp]},byte(s.t)}
+				m.Data[modp] = &Modifier{[]Rule{m.Data[modp]},byte(s.t),0}
 			}
 			s.next()
 		case '(':
@@ -76,7 +76,16 @@ func (s* sfparser) rule0(m *Modifier) {
 			if atyp>=0 {
 				switch aty{
 				case "-":
-					m.Data[atyp] = &Modifier{[]Rule{m.Data[atyp]},M_DROP}
+					m.Data[atyp] = &Modifier{[]Rule{m.Data[atyp]},M_DROP,0}
+				case "e","verbose":
+					if _,ok := m.Data[atyp].(*Modifier); ok {
+						m.Data[atyp].(*Modifier).Flags |= F_VERBOSE
+					}
+				case "E","mute":
+					if _,ok := m.Data[atyp].(*Modifier); !ok {
+						m.Data[atyp] = &Modifier{[]Rule{m.Data[atyp]},M_SEQ,0}
+					}
+					m.Data[atyp].(*Modifier).Flags |= F_MUTE
 				}
 			}
 		default: return
