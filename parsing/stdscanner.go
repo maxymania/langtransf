@@ -13,11 +13,19 @@ var stdTMap = map[rune]string{
 	scanner.Comment: "Comment",
 }
 
+// The standard scanner. It uses the "text/scanner" package.
 type StdScanner struct{
 	s    scanner.Scanner
 	tmap map[rune]string
 	kmap map[string]string
 }
+/*
+ Initializes the Scanner.
+
+ kmap map[string]string:  the keyword map. Initialize with SyntaxFile.ScanForKeyWords
+
+ src io.Reader:           the source code.
+ */
 func (s *StdScanner) Init(kmap map[string]string,src io.Reader) *StdScanner {
 	s.tmap = stdTMap
 	s.kmap = kmap
@@ -26,6 +34,10 @@ func (s *StdScanner) Init(kmap map[string]string,src io.Reader) *StdScanner {
 	return s
 }
 
+/*
+ Returns the first token. This method should only called once.
+ The names of the token types are derived from the "text/scanner" package.
+ */
 func (s *StdScanner) FirstToken() *Token {
 	var f Generator
 	f = Generator(func() *Token {

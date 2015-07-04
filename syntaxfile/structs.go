@@ -20,6 +20,7 @@ var m_syms = []string{
 	"or",
 	"",
 	"#-",
+	"#p",
 }
 
 func generateSRule(r []Rule) string {
@@ -50,12 +51,22 @@ func generateSRule_or(r []Rule) string {
 	return b.String()
 }
 
+//A Syntax rule (general interface).
 type Rule interface{
+	// Scans for keywords, used by SyntaxFile.ScanForKeyWords
 	ScanForKeyWords(km map[string]string)
+	// Parses an 
+	// sf SyntaxFile:     its parent syntax file object
+	// t *parsing.Token:  the first token (the source is a linked list of tokens
+	//                    that uses a lazy evaluation technique)
+	// d *ast.AST:        The destination for the AST
+	// e *ErrorRecorder:  The destination for the Error messages
 	Parse(sf SyntaxFile,t *parsing.Token,d *ast.AST,e *ErrorRecorder) *parsing.Token 
 }
 
+// A SyntaxFile object. It containes all (top-level) rules.
 type SyntaxFile map[string]Rule
+// Scans for keywords and stores it inside a map. It is needed for the Lexer.
 func (sf SyntaxFile) ScanForKeyWords(km map[string]string) {
 	for _,r := range sf { r.ScanForKeyWords(km) }
 }
@@ -79,11 +90,9 @@ func (m Modifier) String() string {
 	if m.Mode==M_SEQ {
 		return fmt.Sprintf("%v",generateSRule(m.Data))
 	}
-	if m.Mode==M_DROP {
+	switch m.Mode {
+	case M_DROP,M_OMIT_VERBOSITY:
 		return fmt.Sprintf("%v %v",generateSRule(m.Data),m_syms[m.Mode])
-	}
-	if m.Mode==M_OMIT_VERBOSITY	{
-		return fmt.Sprintf("%v #p",m.Data[0])
 	}
 	if m.Mode<' ' {
 		return fmt.Sprintf("%v",generateSRule(m.Data))

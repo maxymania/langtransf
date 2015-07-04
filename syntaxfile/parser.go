@@ -132,6 +132,8 @@ func (s* sfparser) parse() SyntaxFile {
 	}
 	return sf
 }
+
+// Parses an SyntaxFile. On Syntax error it panics.
 func Parse(src io.Reader) SyntaxFile {
 	sf := &sfparser{}
 	sf.s.Init(src)
