@@ -33,7 +33,26 @@ var m_syms = []string{
 	"#p",
 }
 
+func verbosityString(flags byte) string{
+	if flags==0 { return "" }
+	s := "#"
+	if (flags&F_VERBOSE)!=0 { s+="e" }
+	if (flags&F_MUTE)!=0 { s+="E" }
+	return s
+}
+
 func generateSRule(r []Rule) string {
+	b := &bytes.Buffer{}
+	for i,v := range r {
+		if i==0{
+			fmt.Fprintf(b,"%v",v)
+		}else{
+			fmt.Fprintf(b," %v",v)
+		}
+	}
+	return b.String()
+}
+func generateSRuleP(r []Rule) string {
 	b := &bytes.Buffer{}
 	b.WriteString("(")
 	for i,v := range r {
@@ -47,17 +66,19 @@ func generateSRule(r []Rule) string {
 	return b.String()
 }
 
-func generateSRule_or(r []Rule) string {
+func generateSRule_or(r []Rule,flags byte) string {
 	b := &bytes.Buffer{}
-	b.WriteString("(")
+	pp := len(r)>1
+	if pp { b.WriteString("(") }
+	fstr := verbosityString(flags)
 	for i,v := range r {
 		if i==0{
 			fmt.Fprintf(b,"%v",v)
 		}else{
-			fmt.Fprintf(b,"|%v",v)
+			fmt.Fprintf(b," |%s %v",fstr,v)
 		}
 	}
-	b.WriteString(")")
+	if pp { b.WriteString(")") }
 	return b.String()
 }
 
@@ -95,19 +116,19 @@ type Modifier struct{
 }
 func (m Modifier) String() string {
 	if m.Mode==M_OR {
-		return fmt.Sprintf("%v",generateSRule_or(m.Data))
+		return generateSRule_or(m.Data,m.Flags)
 	}
 	if m.Mode==M_SEQ {
-		return fmt.Sprintf("%v",generateSRule(m.Data))
+		return generateSRule(m.Data)
 	}
 	switch m.Mode {
 	case M_DROP,M_OMIT_VERBOSITY:
-		return fmt.Sprintf("%v %v",generateSRule(m.Data),m_syms[m.Mode])
+		return fmt.Sprintf("%v%v",generateSRuleP(m.Data),m_syms[m.Mode])
 	}
 	if m.Mode<' ' {
-		return fmt.Sprintf("%v",generateSRule(m.Data))
+		return generateSRule(m.Data)
 	}
-	return fmt.Sprintf("%v%c",generateSRule(m.Data),m.Mode)
+	return fmt.Sprintf("%v%c%s",generateSRuleP(m.Data),m.Mode,verbosityString(m.Flags))
 }
 func (m Modifier) ScanForKeyWords(km map[string]string) {
 	for _,r := range m.Data { r.ScanForKeyWords(km) }
